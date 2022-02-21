@@ -1,0 +1,46 @@
+version: 2.1
+orbs:
+  # use latest 1.x.y version of the orb
+  # best practice is to use an exact version
+  cypress: cypress-io/cypress@1.16.1
+  node: circleci/node@1.1
+
+executors:
+  chrome80-ff72:
+    docker:
+      - image: 'cypress/browsers:node13.6.0-chrome80-ff72'
+
+jobs:
+  unit:
+    executor:
+      name: node/default
+      tag: '12'
+    steps:
+      - checkout
+      - node/with-cache:
+          steps:
+            - run: npm ci
+      - run: npm test
+
+# custom cypress run command
+workflows:
+  # a workflow to run on dependency updates with Renovate
+  dependencies:
+    jobs:
+      - cypress/run:
+          name: test dependencies
+          no-workspace: true
+          tags: dependencies,renovate
+
+  build:
+    jobs:
+
+      - cypress/run:
+          name: run tests
+          # it is a single job, so no need to
+          # cache workspace (faster!)
+          no-workspace: true
+          command: 'npm cypress run'
+          post-steps:
+            - store_test_results:
+                path: cypress/results
